@@ -1,6 +1,8 @@
 import dotenv from 'dotenv';
 import { Client as RestClient } from 'node-rest-client'
 import { balanceTeams } from './balancer.js';
+import { maps } from './maps.js';
+import fs from 'fs';
 
 var restClient = new RestClient();
 
@@ -31,13 +33,23 @@ client.on(Events.ClientReady, readyClient => {
   .setDefaultMemberPermissions(ApplicationCommandOptionType.GuildMembers)
 
   const userOption = new SlashCommandUserOption().setName("player").setRequired(true).setDescription("Jugador a registrar el tier");
-  const registerTierOption = new SlashCommandStringOption().setName("tier").setRequired(true).setDescription("Tier a registrar");
+  const registerTierOption = new SlashCommandStringOption().setName("map").setRequired(true).setDescription("Mapa a registrar");
+  const attackOption = new SlashCommandStringOption().setName("attack").setRequired(true).setDescription("Habilidad de ataque del jugador");
+  const defenseOption = new SlashCommandStringOption().setName("defense").setRequired(true).setDescription("Habilidad de defensa del jugador");
+  const dmOption = new SlashCommandStringOption().setName("dm").setRequired(true).setDescription("Habilidad de DM del jugador");
+  const teamplayOption = new SlashCommandStringOption().setName("teamplay").setRequired(true).setDescription("Habilidad de teamplay del jugador");
+  const positioningOption = new SlashCommandStringOption().setName("positioning").setRequired(true).setDescription("Habilidad de posicionamiento del jugador");
 
   const registerTier = new SlashCommandBuilder()
   .setName("registertier")
   .setDescription("Registra un tier para un jugador")
   .addUserOption(userOption)
   .addStringOption(registerTierOption)
+  .addStringOption(attackOption)
+  .addStringOption(defenseOption)
+  .addStringOption(dmOption)
+  .addStringOption(teamplayOption)
+  .addStringOption(positioningOption)
   .setDefaultMemberPermissions(ApplicationCommandOptionType.GuildMembers)
 
   const balanceTeams = new SlashCommandStringOption().setName("players").setRequired(true).setDescription("Balancea los equipos de los jugadores registrados");
@@ -54,97 +66,41 @@ client.on(Events.ClientReady, readyClient => {
 client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
-  if (interaction.commandName === 'lastmatch') {
-
-    const player = interaction.options.get("player").value
-
-    let request = await fetch(`https://xero.gg/api/match/player/${player}?limit=1&players=12`, {
-      method: 'GET',
-      headers: {
-        "x-api-access-key-id": process.env.KEY_ID, "x-api-secret-access-key" : process.env.ACCESS_KEY, 'Content-Type' : 'application/json'
-      }
-    })
-
-    if(!request.ok) {
-      interaction.reply({
-        content: `Bro...`
-      })
-    }
-
-    const match = await request.json();
-
-    let players = match.matches[0].players.sort((player1, player2) => {
-      return player1.stats.totalScore - player2.stats.totalScore;
-    })
-
-    request = await fetch(`https://xero.gg/api/player/${players[players.length - 1].name}`, {
-          method: 'GET',
-          headers: {
-            "x-api-access-key-id": process.env.PLAYER1_KEY_ID, "x-api-secret-access-key" : process.env.PLAYER1_ACCESS_KEY, 'Content-Type' : 'application/json'
-          }
-        }).then(response => response.json());
-
-    let requestbadplayer = await fetch(`https://xero.gg/api/player/${players[0].name}`, {
-          method: 'GET',
-          headers: {
-            "x-api-access-key-id": process.env.PLAYER2_KEY_ID, "x-api-secret-access-key" : process.env.PLAYER2_ACCESS_KEY, 'Content-Type' : 'application/json'
-          }
-        }).then(response => response.json());
-
-    const mapImage = new AttachmentBuilder(match.matches[0].map.image, {name : 'image.png'})
-
-    await interaction.reply({
-      content: `Mapa: ${match.matches[0].map.name}\nScore: Alpha ${match.matches[0].score.alpha} - Beta ${match.matches[0].score.beta}`, files : [mapImage]
-    })
-
-    const imagenGoodPlayer = new AttachmentBuilder(request.player.avatar.image, {name: 'image.png'})
-
-    await interaction.followUp({
-      content: `Premios:\nEl mas buenardo: ${players[players.length - 1].name} => ${players[players.length - 1].stats.totalScore} pts\n`, files : [imagenGoodPlayer]
-    })
-
-    const imagenBadPlayer = new AttachmentBuilder(requestbadplayer.player.avatar.image, {name: 'image.png'})
-
-    await interaction.followUp({
-      content: `El mas malardo: ${players[0].name} => ${players[0].stats.totalScore} pts\n`, files: [imagenBadPlayer]
-    })
-
-    await interaction.followUp({
-      content: `Mariconada histórica: ${players[Math.floor(Math.random() * players.length)].name}\nDasheada histórica: ${players[Math.floor(Math.random() * players.length)].name}`
-    })
-
-  }
-
-
   if(interaction.commandName === 'registertier') {
     const player = interaction.options.get("player");
-    const tier = interaction.options.get("tier").value;
+    const map = interaction.options.get("map").value;
 
-    const playerToRegister = {
-      id: player.value,
-      name: player.user.username,
-      tier: tier
+    if(!maps.includes(map)) {
+      await interaction.reply({
+        content: `Mapa no válido. Por favor, selecciona uno de los siguientes: ${maps.join(", ")}`
+      });
+      return;
+    }
+    
+    const attack = parseFloat(interaction.options.get("attack").value);
+    const defense = parseFloat(interaction.options.get("defense").value);
+    const dm = parseFloat(interaction.options.get("dm").value);
+    const teamplay = parseFloat(interaction.options.get("teamplay").value);
+    const positioning = parseFloat(interaction.options.get("positioning").value);
+
+    if(!validSkillValue(attack) || !validSkillValue(defense) || !validSkillValue(dm) || !validSkillValue(teamplay) || !validSkillValue(positioning)) {
+      await interaction.reply({
+        content: `Valores de habilidades no válidos. Por favor, ingresa valores entre 1 y 5 para cada habilidad.`
+      });
+      return;
     }
 
-    playerList.push(playerToRegister);
-
-    const sentMessage = await interaction.reply({
-      content: `Jugadores registrados ${playerList.map(player => player.name).join(", ")}`
-    })
-
-    setTimeout(async () => {
-      sentMessage.delete().catch(console.error);
-    }, 5000)
-  }
-
-  if(interaction.commandName === 'balanceteams') {
-    const balanced = balanceTeams(playerList);
+    let playerData = JSON.parse(fs.readFileSync('player-data.json', 'utf-8'));
 
     await interaction.reply({
-      content: `Team 1: ${balanced.team1.map(player => `<@${player.id}>`).join(" ")}\nTeam 2: ${balanced.team2.map(player => `<@${player.id}>`).join(" ")}`
-    })
+      content: `Tier registrado para ${player.user.username} en el mapa ${map}`
+    });
   }
 
 });
+
+function validSkillValue(value) {
+  return value > 0 && value <= 5;
+}
 
 client.login(process.env.DISCORD_TOKEN);
