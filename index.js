@@ -110,9 +110,30 @@ client.on(Events.InteractionCreate, async interaction => {
          ]
       }
       playerData.push(playerSkill);
+    } else {
+      
 
-      fs.writeFileSync('player-data.json', JSON.stringify(playerData, null, 2));
+      let skill = xeroPlayer.skills.find(s => s.map === map);
+
+      if(skill) {
+        skill.attack = attack;
+        skill.defense = defense;
+        skill.dm = dm;
+        skill.teamplay = teamplay;
+        skill.positioning = positioning;
+      } else {
+        xeroPlayer.skills.push({
+          map: map,
+          attack: attack,
+          defense: defense,
+          dm: dm,
+          teamplay: teamplay,
+          positioning: positioning
+        });
+      }
     }
+    
+    fs.writeFileSync('player-data.json', JSON.stringify(playerData, null, 2));
 
     await interaction.reply({
       content: `Tier registrado para ${player.user.username} en el mapa ${map}`

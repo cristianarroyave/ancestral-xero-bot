@@ -1,2 +1,24 @@
 [
+  {
+    "id": "670586730746740774",
+    "username": "naamo",
+    "skills": [
+      {
+        "map": "Tunnel",
+        "attack": 2,
+        "defense": 3,
+        "dm": 3,
+        "teamplay": 5,
+        "positioning": 5
+      },
+      {
+        "map": "Station-2",
+        "attack": 3,
+        "defense": 3,
+        "dm": 3,
+        "teamplay": 3,
+        "positioning": 3
+      }
+    ]
+  }
 ]
