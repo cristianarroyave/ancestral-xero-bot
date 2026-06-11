@@ -24,14 +24,6 @@ const client = new Client({
 client.on(Events.ClientReady, readyClient => {
   console.log(`Logged in as ${readyClient.user.tag}!`);
 
-  const stringoption = new SlashCommandStringOption().setName("player").setRequired(true).setDescription("Cositas..");
-
-  const lastplayer = new SlashCommandBuilder()
-  .setName("lastmatch")
-  .setDescription("Cositas..")
-  .addStringOption(stringoption)
-  .setDefaultMemberPermissions(ApplicationCommandOptionType.GuildMembers)
-
   const userOption = new SlashCommandUserOption().setName("player").setRequired(true).setDescription("Jugador a registrar el tier");
   const registerTierOption = new SlashCommandStringOption().setName("map").setRequired(true).setDescription("Mapa a registrar");
   const attackOption = new SlashCommandStringOption().setName("attack").setRequired(true).setDescription("Habilidad de ataque del jugador");
@@ -52,19 +44,28 @@ client.on(Events.ClientReady, readyClient => {
   .addStringOption(positioningOption)
   .setDefaultMemberPermissions(ApplicationCommandOptionType.GuildMembers)
 
-  const balanceTeams = new SlashCommandStringOption().setName("players").setRequired(true).setDescription("Balancea los equipos de los jugadores registrados");
+  const checkUserOption = new SlashCommandUserOption().setName("player").setRequired(true).setDescription("Jugador a consultar");
+  const checkMapOption = new SlashCommandStringOption().setName("map").setRequired(true).setDescription("Mapa a consultar");
 
-  const balanceTeamsCommand = new SlashCommandBuilder()
-  .setName("balanceteams")
-  .setDescription("Balancea los equipos de los jugadores registrados")
-  .addStringOption(balanceTeams)
+  const checkStats = new SlashCommandBuilder()
+  .setName("checkstats")
+  .setDescription("Consulta las estadísticas de un jugador")
+  .addUserOption(checkUserOption)
+  .addStringOption(checkMapOption)
   .setDefaultMemberPermissions(ApplicationCommandOptionType.GuildMembers)
 
-  client.application.commands.set([lastplayer, registerTier, balanceTeamsCommand])
+
+  client.application.commands.set([registerTier, checkStats])
 })
 
 client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isChatInputCommand()) return;
+
+  if(interaction.commandName === 'checkstats') {
+    console.log('polla');
+
+    return;
+  }
 
   if(interaction.commandName === 'registertier') {
     const player = interaction.options.get("player");
