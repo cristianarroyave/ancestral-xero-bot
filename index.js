@@ -67,6 +67,7 @@ client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
   if(interaction.commandName === 'registertier') {
+    try {
     const player = interaction.options.get("player");
     const map = interaction.options.get("map").value;
 
@@ -138,6 +139,12 @@ client.on(Events.InteractionCreate, async interaction => {
     await interaction.reply({
       content: `Tier registrado para ${player.user.username} en el mapa ${map}`
     });
+    } catch (error) {
+      console.error(error);
+      await interaction.reply({
+        content: `Ocurrió un error al registrar el tier. Por favor, intenta nuevamente.`
+      });
+    }
   }
 
 });
