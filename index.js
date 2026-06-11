@@ -64,7 +64,6 @@ client.on(Events.ClientReady, readyClient => {
 })
 
 client.on(Events.InteractionCreate, async interaction => {
-  console.log(`Received interaction: ${interaction.commandName}`);
   if (!interaction.isChatInputCommand()) return;
 
   if(interaction.commandName === 'registertier') {
