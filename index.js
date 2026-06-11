@@ -92,6 +92,28 @@ client.on(Events.InteractionCreate, async interaction => {
 
     let playerData = JSON.parse(fs.readFileSync('player-data.json', 'utf-8'));
 
+    let xeroPlayer = playerData.find(p => p.id === player.user.id);
+
+    if(!xeroPlayer) {
+      let playerSkill = {
+         id: player.user.id,
+         username: player.user.username,
+         skills : [
+          {
+            map: map,
+            attack: attack,
+            defense: defense,
+            dm: dm,
+            teamplay: teamplay,
+            positioning: positioning
+          }
+         ]
+      }
+      playerData.push(playerSkill);
+
+      fs.writeFileSync('player-data.json', JSON.stringify(playerData, null, 2));
+    }
+
     await interaction.reply({
       content: `Tier registrado para ${player.user.username} en el mapa ${map}`
     });
