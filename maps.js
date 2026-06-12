@@ -1,0 +1,1 @@
+export const maps = ['Station-2', 'Old-School', 'Temple', 'Neden-3', 'Tunnel'];

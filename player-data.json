@@ -1,0 +1,46 @@
+[
+  {
+    "id": "670586730746740774",
+    "username": "naamo",
+    "skills": [
+      {
+        "map": "Tunnel",
+        "attack": 2,
+        "defense": 3,
+        "dm": 3,
+        "teamplay": 5,
+        "positioning": 5
+      },
+      {
+        "map": "Station-2",
+        "attack": 3,
+        "defense": 3,
+        "dm": 3,
+        "teamplay": 3,
+        "positioning": 3
+      }
+    ]
+  },
+  {
+    "id": "272986070747054080",
+    "username": "zonumei",
+    "skills": [
+      {
+        "map": "Station-2",
+        "attack": 2,
+        "defense": 2,
+        "dm": 4,
+        "teamplay": 2,
+        "positioning": 2
+      },
+      {
+        "map": "Neden-3",
+        "attack": 3,
+        "defense": 1,
+        "dm": 2,
+        "teamplay": 2,
+        "positioning": 1
+      }
+    ]
+  }
+]

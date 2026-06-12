@@ -1,6 +1,8 @@
 import dotenv from 'dotenv';
 import { Client as RestClient } from 'node-rest-client'
 import { balanceTeams } from './balancer.js';
+import { maps } from './maps.js';
+import fs from 'fs';
 
 var restClient = new RestClient();
 
@@ -22,129 +24,145 @@ const client = new Client({
 client.on(Events.ClientReady, readyClient => {
   console.log(`Logged in as ${readyClient.user.tag}!`);
 
-  const stringoption = new SlashCommandStringOption().setName("player").setRequired(true).setDescription("Cositas..");
-
-  const lastplayer = new SlashCommandBuilder()
-  .setName("lastmatch")
-  .setDescription("Cositas..")
-  .addStringOption(stringoption)
-  .setDefaultMemberPermissions(ApplicationCommandOptionType.GuildMembers)
-
   const userOption = new SlashCommandUserOption().setName("player").setRequired(true).setDescription("Jugador a registrar el tier");
-  const registerTierOption = new SlashCommandStringOption().setName("tier").setRequired(true).setDescription("Tier a registrar");
+  const registerTierOption = new SlashCommandStringOption().setName("map").setRequired(true).setDescription("Mapa a registrar");
+  const attackOption = new SlashCommandStringOption().setName("attack").setRequired(true).setDescription("Habilidad de ataque del jugador");
+  const defenseOption = new SlashCommandStringOption().setName("defense").setRequired(true).setDescription("Habilidad de defensa del jugador");
+  const dmOption = new SlashCommandStringOption().setName("dm").setRequired(true).setDescription("Habilidad de DM del jugador");
+  const teamplayOption = new SlashCommandStringOption().setName("teamplay").setRequired(true).setDescription("Habilidad de teamplay del jugador");
+  const positioningOption = new SlashCommandStringOption().setName("positioning").setRequired(true).setDescription("Habilidad de posicionamiento del jugador");
 
   const registerTier = new SlashCommandBuilder()
   .setName("registertier")
   .setDescription("Registra un tier para un jugador")
   .addUserOption(userOption)
   .addStringOption(registerTierOption)
+  .addStringOption(attackOption)
+  .addStringOption(defenseOption)
+  .addStringOption(dmOption)
+  .addStringOption(teamplayOption)
+  .addStringOption(positioningOption)
   .setDefaultMemberPermissions(ApplicationCommandOptionType.GuildMembers)
 
-  const balanceTeams = new SlashCommandStringOption().setName("players").setRequired(true).setDescription("Balancea los equipos de los jugadores registrados");
+  const checkUserOption = new SlashCommandUserOption().setName("player").setRequired(true).setDescription("Jugador a consultar");
+  const checkMapOption = new SlashCommandStringOption().setName("map").setRequired(true).setDescription("Mapa a consultar");
 
-  const balanceTeamsCommand = new SlashCommandBuilder()
-  .setName("balanceteams")
-  .setDescription("Balancea los equipos de los jugadores registrados")
-  .addStringOption(balanceTeams)
+  const checkStats = new SlashCommandBuilder()
+  .setName("checkstats")
+  .setDescription("Consulta las estadísticas de un jugador")
+  .addUserOption(checkUserOption)
+  .addStringOption(checkMapOption)
   .setDefaultMemberPermissions(ApplicationCommandOptionType.GuildMembers)
 
-  client.application.commands.set([lastplayer, registerTier, balanceTeamsCommand])
+
+  client.application.commands.set([registerTier, checkStats])
 })
 
 client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isChatInputCommand()) return;
-
-  if (interaction.commandName === 'lastmatch') {
-
-    const player = interaction.options.get("player").value
-
-    let request = await fetch(`https://xero.gg/api/match/player/${player}?limit=1&players=12`, {
-      method: 'GET',
-      headers: {
-        "x-api-access-key-id": process.env.KEY_ID, "x-api-secret-access-key" : process.env.ACCESS_KEY, 'Content-Type' : 'application/json'
-      }
-    })
-
-    if(!request.ok) {
-      interaction.reply({
-        content: `Bro...`
+  if(interaction.commandName === 'checkstats') {
+    const player = interaction.options.get("player");
+    const map = interaction.options.get("map").value;
+    let playerData = JSON.parse(fs.readFileSync('player-data.json', 'utf-8'));
+    let xeroPlayer = playerData.find(p => p.id === player.user.id);
+    if (!xeroPlayer) {
+      await interaction.reply({
+        content: `Este cebao no existe en la base de datos. Actualiza tu antivirus, subnormal.`
       })
+      return;
     }
-
-    const match = await request.json();
-
-    let players = match.matches[0].players.sort((player1, player2) => {
-      return player1.stats.totalScore - player2.stats.totalScore;
+    let skill = xeroPlayer.skills.find(s => s.map === map);
+    if (!skill) {
+     await interaction.reply({
+       content: `Este mamahuevazo no le sabe a lo salto' aquí`
     })
-
-    request = await fetch(`https://xero.gg/api/player/${players[players.length - 1].name}`, {
-          method: 'GET',
-          headers: {
-            "x-api-access-key-id": process.env.PLAYER1_KEY_ID, "x-api-secret-access-key" : process.env.PLAYER1_ACCESS_KEY, 'Content-Type' : 'application/json'
-          }
-        }).then(response => response.json());
-
-    let requestbadplayer = await fetch(`https://xero.gg/api/player/${players[0].name}`, {
-          method: 'GET',
-          headers: {
-            "x-api-access-key-id": process.env.PLAYER2_KEY_ID, "x-api-secret-access-key" : process.env.PLAYER2_ACCESS_KEY, 'Content-Type' : 'application/json'
-          }
-        }).then(response => response.json());
-
-    const mapImage = new AttachmentBuilder(match.matches[0].map.image, {name : 'image.png'})
-
+     return;
+    }
     await interaction.reply({
-      content: `Mapa: ${match.matches[0].map.name}\nScore: Alpha ${match.matches[0].score.alpha} - Beta ${match.matches[0].score.beta}`, files : [mapImage]
-    })
-
-    const imagenGoodPlayer = new AttachmentBuilder(request.player.avatar.image, {name: 'image.png'})
-
-    await interaction.followUp({
-      content: `Premios:\nEl mas buenardo: ${players[players.length - 1].name} => ${players[players.length - 1].stats.totalScore} pts\n`, files : [imagenGoodPlayer]
-    })
-
-    const imagenBadPlayer = new AttachmentBuilder(requestbadplayer.player.avatar.image, {name: 'image.png'})
-
-    await interaction.followUp({
-      content: `El mas malardo: ${players[0].name} => ${players[0].stats.totalScore} pts\n`, files: [imagenBadPlayer]
-    })
-
-    await interaction.followUp({
-      content: `Mariconada histórica: ${players[Math.floor(Math.random() * players.length)].name}\nDasheada histórica: ${players[Math.floor(Math.random() * players.length)].name}`
-    })
-
+      content: `Los stats son ${map}
+      Attack: ${skill.attack} Defense: ${skill.defense} DM: ${skill.dm} Teamplay: ${skill.teamplay} Positioning: ${skill.positioning}`
+    });
+    return;
   }
-
 
   if(interaction.commandName === 'registertier') {
     const player = interaction.options.get("player");
-    const tier = interaction.options.get("tier").value;
+    const map = interaction.options.get("map").value;
 
-    const playerToRegister = {
-      id: player.value,
-      name: player.user.username,
-      tier: tier
+    if(!maps.includes(map)) {
+      await interaction.reply({
+        content: `Mapa no válido. Por favor, selecciona uno de los siguientes: ${maps.join(", ")}`
+      });
+      return;
+    }
+    
+    const attack = parseFloat(interaction.options.get("attack").value);
+    const defense = parseFloat(interaction.options.get("defense").value);
+    const dm = parseFloat(interaction.options.get("dm").value);
+    const teamplay = parseFloat(interaction.options.get("teamplay").value);
+    const positioning = parseFloat(interaction.options.get("positioning").value);
+
+    if(!validSkillValue(attack) || !validSkillValue(defense) || !validSkillValue(dm) || !validSkillValue(teamplay) || !validSkillValue(positioning)) {
+      await interaction.reply({
+        content: `Valores de habilidades no válidos. Por favor, ingresa valores entre 1 y 5 para cada habilidad.`
+      });
+      return;
     }
 
-    playerList.push(playerToRegister);
+    let playerData = JSON.parse(fs.readFileSync('player-data.json', 'utf-8'));
 
-    const sentMessage = await interaction.reply({
-      content: `Jugadores registrados ${playerList.map(player => player.name).join(", ")}`
-    })
+    let xeroPlayer = playerData.find(p => p.id === player.user.id);
 
-    setTimeout(async () => {
-      sentMessage.delete().catch(console.error);
-    }, 5000)
-  }
+    if(!xeroPlayer) {
+      let playerSkill = {
+         id: player.user.id,
+         username: player.user.username,
+         skills : [
+          {
+            map: map,
+            attack: attack,
+            defense: defense,
+            dm: dm,
+            teamplay: teamplay,
+            positioning: positioning
+          }
+         ]
+      }
+      playerData.push(playerSkill);
+    } else {
+      
 
-  if(interaction.commandName === 'balanceteams') {
-    const balanced = balanceTeams(playerList);
+      let skill = xeroPlayer.skills.find(s => s.map === map);
+
+      if(skill) {
+        skill.attack = attack;
+        skill.defense = defense;
+        skill.dm = dm;
+        skill.teamplay = teamplay;
+        skill.positioning = positioning;
+      } else {
+        xeroPlayer.skills.push({
+          map: map,
+          attack: attack,
+          defense: defense,
+          dm: dm,
+          teamplay: teamplay,
+          positioning: positioning
+        });
+      }
+    }
+    
+    fs.writeFileSync('player-data.json', JSON.stringify(playerData, null, 2));
 
     await interaction.reply({
-      content: `Team 1: ${balanced.team1.map(player => `<@${player.id}>`).join(" ")}\nTeam 2: ${balanced.team2.map(player => `<@${player.id}>`).join(" ")}`
-    })
+      content: `Tier registrado para ${player.user.username} en el mapa ${map}`
+    });
   }
 
 });
+
+function validSkillValue(value) {
+  return value > 0 && value <= 5;
+}
 
 client.login(process.env.DISCORD_TOKEN);
