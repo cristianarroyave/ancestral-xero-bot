@@ -18,6 +18,14 @@
         "dm": 60,
         "teamplay": 100,
         "positioning": 100
+      },
+      {
+        "map": "Temple",
+        "attack": 99,
+        "defense": 80,
+        "dm": 70,
+        "teamplay": 56,
+        "positioning": 60
       }
     ]
   },
