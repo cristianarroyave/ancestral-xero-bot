@@ -52,29 +52,25 @@ client.on(Events.ClientReady, readyClient => {
   .setName("checkstats")
   .setDescription("Consulta las estadísticas de un jugador")
   .addUserOption(checkUserOption)
-  .addStringOption(checkMapOption)
-  .setDefaultMemberPermissions(ApplicationCommandOptionType.GuildMembers)
+  .addStringOption(checkMapOption);
   
   const startBalanceOption = new SlashCommandStringOption().setName("map").setRequired(true).setDescription("Mapa para el partido a balancear");
 
   const startBalance = new SlashCommandBuilder()
   .setName("startbalance")
   .setDescription("Crea un partido a balancear en el mapa seleccionado")
-  .addStringOption(startBalanceOption)
-  .setDefaultMemberPermissions(ApplicationCommandOptionType.GuildMembers)
+  .addStringOption(startBalanceOption);
 
   const addPlayerOption = new SlashCommandUserOption().setName("player").setRequired(true).setDescription("Jugador a agregar al partido");
 
   const addPlayer = new SlashCommandBuilder()
   .setName("addplayer")
   .setDescription("Agrega un jugador al partido a balancear")
-  .addUserOption(addPlayerOption)
-  .setDefaultMemberPermissions(ApplicationCommandOptionType.GuildMembers)
+  .addUserOption(addPlayerOption);
 
   const balanceGame = new SlashCommandBuilder()
   .setName("balancegame")
-  .setDescription("Balancea el juego")
-  .setDefaultMemberPermissions(ApplicationCommandOptionType.GuildMembers)
+  .setDescription("Balancea el juego");
 
   client.application.commands.set([registerTier, checkStats, startBalance, addPlayer, balanceGame]);
 })

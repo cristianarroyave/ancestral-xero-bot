@@ -35,15 +35,15 @@ const checkstats = async (interaction) => {
 
 const fraseMotivadora = (playerWeight) => {
     switch(true) {
-        case playerWeight >= 0 && playerWeight < 20:
+        case playerWeight >= 0 && playerWeight < 40:
             return "Tier D, aun te falta mucha cancha";
-        case playerWeight >= 20 && playerWeight < 40:
-            return "Tier C, malardo de epoca";
         case playerWeight >= 40 && playerWeight < 60:
-            return "Tier B, espabila joder";
+            return "Tier C, malardo de epoca";
         case playerWeight >= 60 && playerWeight < 80:
+            return "Tier B, espabila joder";
+        case playerWeight >= 80 && playerWeight < 90:
             return "Tier A, locura o que?";
-        case playerWeight >= 80 && playerWeight <= 100:
+        case playerWeight >= 90 && playerWeight <= 100:
             return "Tier S, goat of goats";
     }
 }
