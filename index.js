@@ -60,10 +60,28 @@ client.on(Events.ClientReady, readyClient => {
 
 client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isChatInputCommand()) return;
-
   if(interaction.commandName === 'checkstats') {
-    console.log('polla');
-
+    const player = interaction.options.get("player");
+    const map = interaction.options.get("map").value;
+    let playerData = JSON.parse(fs.readFileSync('player-data.json', 'utf-8'));
+    let xeroPlayer = playerData.find(p => p.id === player.user.id);
+    if (!xeroPlayer) {
+      await interaction.reply({
+        content: `Este cebao no existe en la base de datos. Actualiza tu antivirus, subnormal.`
+      })
+      return;
+    }
+    let skill = xeroPlayer.skills.find(s => s.map === map);
+    if (!skill) {
+     await interaction.reply({
+       content: `Este mamahuevazo no le sabe a lo salto' aquí`
+    })
+     return;
+    }
+    await interaction.reply({
+      content: `Los stats son ${map}
+      Attack: ${skill.attack} Defense: ${skill.defense} DM: ${skill.dm} Teamplay: ${skill.teamplay} Positioning: ${skill.positioning}`
+    });
     return;
   }
 
