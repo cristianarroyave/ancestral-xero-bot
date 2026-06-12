@@ -5,19 +5,19 @@
     "skills": [
       {
         "map": "Tunnel",
-        "attack": 2,
-        "defense": 3,
-        "dm": 3,
-        "teamplay": 5,
-        "positioning": 5
+        "attack": 64,
+        "defense": 51,
+        "dm": 89,
+        "teamplay": 60,
+        "positioning": 66
       },
       {
         "map": "Station-2",
-        "attack": 3,
-        "defense": 3,
-        "dm": 3,
-        "teamplay": 3,
-        "positioning": 3
+        "attack": 40,
+        "defense": 60,
+        "dm": 60,
+        "teamplay": 100,
+        "positioning": 100
       }
     ]
   },
@@ -27,19 +27,19 @@
     "skills": [
       {
         "map": "Station-2",
-        "attack": 2,
-        "defense": 2,
-        "dm": 4,
-        "teamplay": 2,
-        "positioning": 2
+        "attack": 40,
+        "defense": 60,
+        "dm": 60,
+        "teamplay": 100,
+        "positioning": 100
       },
       {
         "map": "Neden-3",
-        "attack": 3,
-        "defense": 1,
-        "dm": 2,
-        "teamplay": 2,
-        "positioning": 1
+        "attack": 40,
+        "defense": 60,
+        "dm": 60,
+        "teamplay": 100,
+        "positioning": 100
       }
     ]
   }

@@ -3,6 +3,7 @@ import { Client as RestClient } from 'node-rest-client'
 import { balanceTeams } from './balancer.js';
 import { maps } from './maps.js';
 import fs from 'fs';
+import checkstats from './actions/checkstats.js';
 
 var restClient = new RestClient();
 
@@ -24,7 +25,6 @@ const client = new Client({
 client.on(Events.ClientReady, readyClient => {
   console.log(`Logged in as ${readyClient.user.tag}!`);
 
-  const userOption = new SlashCommandUserOption().setName("player").setRequired(true).setDescription("Jugador a registrar el tier");
   const registerTierOption = new SlashCommandStringOption().setName("map").setRequired(true).setDescription("Mapa a registrar");
   const attackOption = new SlashCommandStringOption().setName("attack").setRequired(true).setDescription("Habilidad de ataque del jugador");
   const defenseOption = new SlashCommandStringOption().setName("defense").setRequired(true).setDescription("Habilidad de defensa del jugador");
@@ -35,7 +35,6 @@ client.on(Events.ClientReady, readyClient => {
   const registerTier = new SlashCommandBuilder()
   .setName("registertier")
   .setDescription("Registra un tier para un jugador")
-  .addUserOption(userOption)
   .addStringOption(registerTierOption)
   .addStringOption(attackOption)
   .addStringOption(defenseOption)
@@ -60,33 +59,12 @@ client.on(Events.ClientReady, readyClient => {
 
 client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isChatInputCommand()) return;
+
   if(interaction.commandName === 'checkstats') {
-    const player = interaction.options.get("player");
-    const map = interaction.options.get("map").value;
-    let playerData = JSON.parse(fs.readFileSync('player-data.json', 'utf-8'));
-    let xeroPlayer = playerData.find(p => p.id === player.user.id);
-    if (!xeroPlayer) {
-      await interaction.reply({
-        content: `Este cebao no existe en la base de datos. Actualiza tu antivirus, subnormal.`
-      })
-      return;
-    }
-    let skill = xeroPlayer.skills.find(s => s.map === map);
-    if (!skill) {
-     await interaction.reply({
-       content: `Este mamahuevazo no le sabe a lo salto' aquí`
-    })
-     return;
-    }
-    await interaction.reply({
-      content: `Los stats son ${map}
-      Attack: ${skill.attack} Defense: ${skill.defense} DM: ${skill.dm} Teamplay: ${skill.teamplay} Positioning: ${skill.positioning}`
-    });
-    return;
+    await checkstats(interaction);
   }
 
   if(interaction.commandName === 'registertier') {
-    const player = interaction.options.get("player");
     const map = interaction.options.get("map").value;
 
     if(!maps.includes(map)) {
@@ -111,12 +89,12 @@ client.on(Events.InteractionCreate, async interaction => {
 
     let playerData = JSON.parse(fs.readFileSync('player-data.json', 'utf-8'));
 
-    let xeroPlayer = playerData.find(p => p.id === player.user.id);
+    let xeroPlayer = playerData.find(p => p.id === interaction.user.id);
 
     if(!xeroPlayer) {
       let playerSkill = {
-         id: player.user.id,
-         username: player.user.username,
+         id: interaction.user.id,
+         username: interaction.user.username,
          skills : [
           {
             map: map,
@@ -155,7 +133,7 @@ client.on(Events.InteractionCreate, async interaction => {
     fs.writeFileSync('player-data.json', JSON.stringify(playerData, null, 2));
 
     await interaction.reply({
-      content: `Tier registrado para ${player.user.username} en el mapa ${map}`
+      content: `Tier registrado para <@${interaction.user.id}> en el mapa ${map}`
     });
   }
 
