@@ -3,6 +3,9 @@ import { Client as RestClient } from 'node-rest-client'
 import { balanceTeams } from './balancer.js';
 import { maps } from './maps.js';
 import fs from 'fs';
+import checkstats from './actions/checkstats.js';
+import registertier from './actions/registertier.js';
+import balanceActions from './actions/balancematch.js';
 
 var restClient = new RestClient();
 
@@ -24,7 +27,6 @@ const client = new Client({
 client.on(Events.ClientReady, readyClient => {
   console.log(`Logged in as ${readyClient.user.tag}!`);
 
-  const userOption = new SlashCommandUserOption().setName("player").setRequired(true).setDescription("Jugador a registrar el tier");
   const registerTierOption = new SlashCommandStringOption().setName("map").setRequired(true).setDescription("Mapa a registrar");
   const attackOption = new SlashCommandStringOption().setName("attack").setRequired(true).setDescription("Habilidad de ataque del jugador");
   const defenseOption = new SlashCommandStringOption().setName("defense").setRequired(true).setDescription("Habilidad de defensa del jugador");
@@ -35,7 +37,6 @@ client.on(Events.ClientReady, readyClient => {
   const registerTier = new SlashCommandBuilder()
   .setName("registertier")
   .setDescription("Registra un tier para un jugador")
-  .addUserOption(userOption)
   .addStringOption(registerTierOption)
   .addStringOption(attackOption)
   .addStringOption(defenseOption)
@@ -51,118 +52,52 @@ client.on(Events.ClientReady, readyClient => {
   .setName("checkstats")
   .setDescription("Consulta las estadísticas de un jugador")
   .addUserOption(checkUserOption)
-  .addStringOption(checkMapOption)
-  .setDefaultMemberPermissions(ApplicationCommandOptionType.GuildMembers)
+  .addStringOption(checkMapOption);
+  
+  const startBalanceOption = new SlashCommandStringOption().setName("map").setRequired(true).setDescription("Mapa para el partido a balancear");
 
+  const startBalance = new SlashCommandBuilder()
+  .setName("startbalance")
+  .setDescription("Crea un partido a balancear en el mapa seleccionado")
+  .addStringOption(startBalanceOption);
 
-  client.application.commands.set([registerTier, checkStats])
+  const addPlayerOption = new SlashCommandUserOption().setName("player").setRequired(true).setDescription("Jugador a agregar al partido");
+
+  const addPlayer = new SlashCommandBuilder()
+  .setName("addplayer")
+  .setDescription("Agrega un jugador al partido a balancear")
+  .addUserOption(addPlayerOption);
+
+  const balanceGame = new SlashCommandBuilder()
+  .setName("balancegame")
+  .setDescription("Balancea el juego");
+
+  client.application.commands.set([registerTier, checkStats, startBalance, addPlayer, balanceGame]);
 })
 
 client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isChatInputCommand()) return;
+
   if(interaction.commandName === 'checkstats') {
-    const player = interaction.options.get("player");
-    const map = interaction.options.get("map").value;
-    let playerData = JSON.parse(fs.readFileSync('player-data.json', 'utf-8'));
-    let xeroPlayer = playerData.find(p => p.id === player.user.id);
-    if (!xeroPlayer) {
-      await interaction.reply({
-        content: `Este cebao no existe en la base de datos. Actualiza tu antivirus, subnormal.`
-      })
-      return;
-    }
-    let skill = xeroPlayer.skills.find(s => s.map === map);
-    if (!skill) {
-     await interaction.reply({
-       content: `Este mamahuevazo no le sabe a lo salto' aquí`
-    })
-     return;
-    }
-    await interaction.reply({
-      content: `Los stats son ${map}
-      Attack: ${skill.attack} Defense: ${skill.defense} DM: ${skill.dm} Teamplay: ${skill.teamplay} Positioning: ${skill.positioning}`
-    });
-    return;
+    await checkstats(interaction);
   }
 
   if(interaction.commandName === 'registertier') {
-    const player = interaction.options.get("player");
-    const map = interaction.options.get("map").value;
+    await registertier(interaction);
+  }
 
-    if(!maps.includes(map)) {
-      await interaction.reply({
-        content: `Mapa no válido. Por favor, selecciona uno de los siguientes: ${maps.join(", ")}`
-      });
-      return;
-    }
-    
-    const attack = parseFloat(interaction.options.get("attack").value);
-    const defense = parseFloat(interaction.options.get("defense").value);
-    const dm = parseFloat(interaction.options.get("dm").value);
-    const teamplay = parseFloat(interaction.options.get("teamplay").value);
-    const positioning = parseFloat(interaction.options.get("positioning").value);
+  if(interaction.commandName === 'startbalance') {
+    await balanceActions.startbalance(interaction);
+  }
 
-    if(!validSkillValue(attack) || !validSkillValue(defense) || !validSkillValue(dm) || !validSkillValue(teamplay) || !validSkillValue(positioning)) {
-      await interaction.reply({
-        content: `Valores de habilidades no válidos. Por favor, ingresa valores entre 1 y 5 para cada habilidad.`
-      });
-      return;
-    }
+  if(interaction.commandName === 'addplayer') {
+    await balanceActions.addPlayer(interaction);
+  }
 
-    let playerData = JSON.parse(fs.readFileSync('player-data.json', 'utf-8'));
-
-    let xeroPlayer = playerData.find(p => p.id === player.user.id);
-
-    if(!xeroPlayer) {
-      let playerSkill = {
-         id: player.user.id,
-         username: player.user.username,
-         skills : [
-          {
-            map: map,
-            attack: attack,
-            defense: defense,
-            dm: dm,
-            teamplay: teamplay,
-            positioning: positioning
-          }
-         ]
-      }
-      playerData.push(playerSkill);
-    } else {
-      
-
-      let skill = xeroPlayer.skills.find(s => s.map === map);
-
-      if(skill) {
-        skill.attack = attack;
-        skill.defense = defense;
-        skill.dm = dm;
-        skill.teamplay = teamplay;
-        skill.positioning = positioning;
-      } else {
-        xeroPlayer.skills.push({
-          map: map,
-          attack: attack,
-          defense: defense,
-          dm: dm,
-          teamplay: teamplay,
-          positioning: positioning
-        });
-      }
-    }
-    
-    fs.writeFileSync('player-data.json', JSON.stringify(playerData, null, 2));
-
-    await interaction.reply({
-      content: `Tier registrado para ${player.user.username} en el mapa ${map}`
-    });
+  if(interaction.commandName === 'balancegame') {
+    await balanceActions.balanceGame(interaction);
   }
 
 });
-
-function validSkillValue(value) {
-  return value > 0 && value <= 5;
-}
 
 client.login(process.env.DISCORD_TOKEN);
